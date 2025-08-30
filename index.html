@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JackTube Admin 🎮</title>
+<style>
+body {
+  margin:0;
+  font-family:'Roboto', sans-serif;
+  background:#0d0d0d;
+  color:#fff;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  height:100vh;
+}
+.admin-box {
+  background:linear-gradient(145deg, #1a1a1a, #111);
+  padding:2rem;
+  border-radius:15px;
+  box-shadow:0 0 20px rgba(255,0,0,0.6);
+  width:380px;
+  text-align:center;
+  transition: transform 0.2s;
+}
+.admin-box:hover {
+  transform: scale(1.02);
+}
+h2 {
+  color:#ff0055;
+  margin-bottom:1rem;
+  font-size:1.8rem;
+}
+input {
+  width:100%;
+  padding:12px;
+  margin:10px 0;
+  border:none;
+  border-radius:8px;
+  background:#222;
+  color:#fff;
+  outline:none;
+  transition: background 0.2s;
+}
+input:focus { background:#333; }
+button {
+  background:#ff0055;
+  border:none;
+  padding:12px 25px;
+  color:white;
+  border-radius:8px;
+  cursor:pointer;
+  font-weight:bold;
+  font-size:1rem;
+  box-shadow:0 0 10px rgba(255,0,85,0.5);
+  transition: all 0.2s;
+}
+button:hover {
+  background:#ff3399;
+  box-shadow:0 0 15px rgba(255,0,85,0.8);
+}
+.msg {
+  margin-top:12px;
+  font-size:0.95rem;
+  color:#0f0;
+  min-height:20px;
+}
+</style>
+</head>
+<body>
+<div class="admin-box" id="adminBox" style="display:none;">
+<h2>Admin Panel</h2>
+<input type="text" id="ytLink" placeholder="Paste YouTube link..." />
+<button id="saveBtn">Save Video</button>
+<p class="msg" id="msg"></p>
+<button id="logoutBtn" style="margin-top:10px; background:#333; box-shadow:none;">Logout</button>
+</div>
+
+<script type="module">
+import { createClient } from "https://esm.sh/@supabase/supabase-js";
+
+// Supabase config
+const SUPABASE_URL = "https://mixqxyrduuwzfuozxaoh.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1peHF4eXJkdXV3emZ1b3p4YW9oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY1NjMwNjQsImV4cCI6MjA3MjEzOTA2NH0.RWLHZTqBhFiOlY60KW-UgNWHxmgI2uPv8JW3OA_CIsc";
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// Show admin panel only if logged in
+async function checkAuth() {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) {
+    window.location.href = "login.html";
+  } else {
+    document.getElementById("adminBox").style.display = "block";
+  }
+}
+
+// Convert YouTube link to embed
+function convertToEmbed(url) {
+  const regex = /(?:https?:\/\/)?(?:www\.)?(?:youtu\.be\/|youtube\.com\/watch\?v=)([a-zA-Z0-9_-]+)/;
+  const match = url.match(regex);
+  return match ? `https://www.youtube.com/embed/${match[1]}` : null;
+}
+
+// Save video to Supabase
+async function saveVideo() {
+  const input = document.getElementById("ytLink").value.trim();
+  const embedUrl = convertToEmbed(input);
+  const msgBox = document.getElementById("msg");
+
+  if (!embedUrl) {
+    msgBox.innerText = "❌ Invalid YouTube link!";
+    return;
+  }
+
+  try {
+    const { data: existing } = await supabase
+      .from("sitecontent")
+      .select("id")
+      .limit(1)
+      .single();
+
+    if (existing) {
+      const { error } = await supabase
+        .from("sitecontent")
+        .update({ video_url: embedUrl })
+        .eq("id", existing.id);
+      if (error) throw error;
+    } else {
+      const { error } = await supabase
+        .from("sitecontent")
+        .insert([{ video_url: embedUrl }]);
+      if (error) throw error;
+    }
+
+    msgBox.innerText = "✅ Video saved successfully!";
+    document.getElementById("ytLink").value = "";
+  } catch (err) {
+    console.error(err);
+    msgBox.innerText = "❌ Error saving video: " + err.message;
+  }
+}
+
+// Logout
+async function logout() {
+  await supabase.auth.signOut();
+  window.location.href = "login.html";
+}
+
+// Event listeners
+document.getElementById("saveBtn").addEventListener("click", saveVideo);
+document.getElementById("logoutBtn").addEventListener("click", logout);
+
+// Check authentication on load
+checkAuth();
+</script>
+</body>
+</html>
