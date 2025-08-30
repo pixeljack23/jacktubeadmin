@@ -23,6 +23,7 @@ body {
   width:380px;
   text-align:center;
   transition: transform 0.2s;
+  display:none; /* hidden initially */
 }
 .admin-box:hover {
   transform: scale(1.02);
@@ -69,7 +70,7 @@ button:hover {
 </style>
 </head>
 <body>
-<div class="admin-box" id="adminBox" style="display:none;">
+<div class="admin-box" id="adminBox">
 <h2>Admin Panel</h2>
 <input type="text" id="ytLink" placeholder="Paste YouTube link..." />
 <button id="saveBtn">Save Video</button>
@@ -82,21 +83,20 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js";
 
 // Supabase config
 const SUPABASE_URL = "https://mixqxyrduuwzfuozxaoh.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1peHF4eXJkdXV3emZ1b3p4YW9oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY1NjMwNjQsImV4cCI6MjA3MjEzOTA2NH0.RWLHZTqBhFiOlY60KW-UgNWHxmgI2uPv8JW3OA_CIsc";
-
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1peHF4eXJkdXV3emZ1b3p4YW9oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY1NjMwNjQsImV4cCI6MjA3MjEzOTA2NH0.RWLHZTqBhFiOlY60KW-UgNWHxmgI2uPv8JW3OA_CIsc"; // replace with your anon key
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// Show admin panel only if logged in
-async function checkAuth() {
+// Check authentication after DOM loads
+document.addEventListener("DOMContentLoaded", async () => {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) {
     window.location.href = "login.html";
   } else {
     document.getElementById("adminBox").style.display = "block";
   }
-}
+});
 
-// Convert YouTube link to embed
+// Convert YouTube link to embed URL
 function convertToEmbed(url) {
   const regex = /(?:https?:\/\/)?(?:www\.)?(?:youtu\.be\/|youtube\.com\/watch\?v=)([a-zA-Z0-9_-]+)/;
   const match = url.match(regex);
@@ -152,10 +152,6 @@ async function logout() {
 document.getElementById("saveBtn").addEventListener("click", saveVideo);
 document.getElementById("logoutBtn").addEventListener("click", logout);
 
-// Check authentication on load
-checkAuth();
 </script>
 </body>
 </html>
-
-
